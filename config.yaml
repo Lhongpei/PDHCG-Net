@@ -1,0 +1,19 @@
+model_params:
+  inner_iter: 2
+  outer_iter: 2
+  hidden_dim: 64
+  gnn_params:
+    hidden_dim: 64
+    num_layers: 2
+    heads: 2
+
+train_params:
+  epochs: 1000
+  lr: 1e-5
+  max_lr: 1e-3
+  validate_step: 10
+  batchsize: 3
+
+validate_params:
+  batchsize: 3
+  
