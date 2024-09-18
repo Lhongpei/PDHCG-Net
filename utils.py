@@ -51,7 +51,7 @@ def sparse_matrix_batch_cat(matrix_list: list):
     crow_batch = torch.cat([matrix_list[i].crow_indices() + var_sizes[i]  if i == 0 else matrix_list[i].crow_indices()[1:] + var_sizes[i] for i in range(len(matrix_list))], dim=0)  
     col_batch = torch.cat([matrix_list[i].col_indices() + col_sizes[i] for i in range(len(matrix_list))], dim=0) 
     values_batch = torch.cat([i.values() for i in matrix_list], dim=0)
-    return torch.sparse_csr_tensor(crow_batch, col_batch, values_batch)
+    return torch.sparse_csr_tensor(crow_batch, col_batch, values_batch, size=(len(crow_batch) - 1, col_sizes[-1]))
 
 def batch_mm(matrix, matrix_batch):
     """

@@ -29,6 +29,13 @@ class PDHCG_Dataset:
                         data_loaded['primal_solution'] = torch.tensor(data_loaded['primal_solution'], dtype=torch.float64)
                         data_loaded['dual_solution'] = torch.tensor(data_loaded['dual_solution'], dtype=torch.float64)
                         self.data.append(data_loaded)
+                elif file.endswith('.pkl'):
+                    with open(os.path.join(self.raw_root, file), 'rb') as f:
+                        data_loaded = pickle.load(f)
+                        data_loaded['problem'] = qpy.from_base_to_torch(data_loaded['problem'])
+                        data_loaded['primal_solution'] = torch.tensor(data_loaded['primal_solution'], dtype=torch.float64)
+                        data_loaded['dual_solution'] = torch.tensor(data_loaded['dual_solution'], dtype=torch.float64)
+                        self.data.append(data_loaded)
         print(f"-----------------Loading END------------------")
         print(f"-----------------Dataset Info-----------------")
         print(f"Number of samples: {len(self.data)}")
@@ -69,7 +76,7 @@ class PDHCG_DataScheduler:
     
     def save_pair(self, problem: qpy.QuadraticProgrammingBase, primal, dual, time=None, iters=None, name=None, zipped=True):
         if name is None:
-            name = f"scale_{problem.n}_{problem.m}_date_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pkl.gz"
+            name = f"scale_{problem.n}_{problem.m}_date_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pkl.gz" if zipped else f"scale_{problem.n}_{problem.m}_date_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.pkl"
         time_info = time if time is not None else 'not given'
         iters_info = iters if iters is not None else 'not given'
         if zipped:

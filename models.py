@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn import LayerNorm
 from torch import Tensor
 from torch.nn import Parameter
 import os
@@ -12,6 +13,7 @@ from torch_geometric.nn import JumpingKnowledge
 from torch_geometric.data import HeteroData
 from torch_geometric.nn import GraphNorm
 import copy
+import math
 class FourierEncoder(torch.nn.Module):
     """Node encoder using Fourier features.
     """
@@ -85,11 +87,13 @@ class PDHCGNet(nn.Module):
         self.iters = config['outer_iter']
         self.primal_output = nn.Sequential(
             nn.Linear(self.hidden_dim, self.hidden_dim, bias=True, device=self.device),
+            #nn.LayerNorm(self.hidden_dim, device=self.device),
             nn.LeakyReLU(),
             nn.Linear(self.hidden_dim, 1, bias=False, device=self.device)
         )
         self.dual_output = nn.Sequential(
             nn.Linear(self.hidden_dim, self.hidden_dim, bias=True, device=self.device),
+            #nn.LayerNorm(self.hidden_dim, device=self.device),
             nn.LeakyReLU(),
             nn.Linear(self.hidden_dim, 1, bias=False, device=self.device)
         )
@@ -100,8 +104,9 @@ class PDHCGNet(nn.Module):
         primal, dual = self.encoder(qp)
         for i in range(self.iters):
             last_primal = primal.clone()
-            dual = self.sub_dual[i](primal, last_primal, dual, qp.constraint_matrix, qp.constraint_lower_bound.unsqueeze(-1))
-            primal = self.sub_primal[i](primal, dual, qp.objective_matrix, qp.objective_vector.unsqueeze(-1), qp.constraint_matrix)        
+            dual = self.sub_dual[0](primal, last_primal, dual, qp.constraint_matrix, qp.constraint_lower_bound.unsqueeze(-1))
+            
+            primal = self.sub_primal[0](primal, dual, qp.objective_matrix, qp.objective_vector.unsqueeze(-1), qp.constraint_matrix)        
         return self.primal_output(primal).squeeze(), self.dual_output(dual).squeeze()
         
     def _init_weights(self):
@@ -124,11 +129,15 @@ class GNNEncoder(nn.Module):
         self.head = config['gnn_params']['heads']
         self.out_dim = config['hidden_dim']
         self.convs = nn.ModuleList()
+        self.feature_encoder_vec = FourierEncoder(math.ceil(self.hidden_dim/6))
+        self.feature_encoder_con = FourierEncoder(math.ceil(self.hidden_dim/2))
+        var_enc_dim = math.ceil(self.hidden_dim/6)*6
+        con_enc_dim = math.ceil(self.hidden_dim/2)*2
         self.convs.append(
             HeteroConv({
                 ('vars', 'obj', 'vars'): GATv2Conv(-1, self.hidden_dim//self.head, heads=self.head, edge_dim=1, add_self_loops=False),
                 ('cons', 'to', 'vars'): GATv2Conv((-1, -1), self.hidden_dim//self.head, heads=self.head, edge_dim=1, add_self_loops=False),
-                ('vars', 'to', 'cons'): GATv2Conv((-1,-1), self.hidden_dim//self.head, heads=self.head, edge_dim=1, add_self_loops=False)
+                ('vars', 'to', 'cons'): GATv2Conv((-1, -1), self.hidden_dim//self.head, heads=self.head, edge_dim=1, add_self_loops=False)
             })
         )
         for _ in range(self.num_layers-1):
@@ -157,6 +166,8 @@ class GNNEncoder(nn.Module):
         varibale_lower_bound[torch.isneginf(varibale_upper_bound)] = -1e2
         hdata['vars'].x = torch.stack([qp.objective_vector, varibale_lower_bound, varibale_upper_bound], dim = 0).t()
         hdata['cons'].x = qp.constraint_lower_bound.unsqueeze(-1)
+        hdata['vars'].x = self.feature_encoder_vec(hdata['vars'].x)
+        hdata['cons'].x = self.feature_encoder_con(hdata['cons'].x)
         coo_obj_matrix = qp.constraint_matrix.to_sparse_coo().coalesce()
         coo_cons_matrix = qp.constraint_matrix.to_sparse_coo().coalesce()
         hdata['vars', 'obj', 'vars'].edge_index = coo_obj_matrix.indices()
@@ -171,9 +182,9 @@ class GNNEncoder(nn.Module):
         edge_attr_dict = hdata.edge_attr_dict
         for conv in self.convs:
             x_dict = conv(x_dict, edge_index_dict, edge_attr_dict)
-            x_dict = {key: F.leaky_relu(x) for key, x in x_dict.items()}
             x_dict['vars'] = self.graph_norm(x_dict['vars'], qp.vars_ptr)
             x_dict['cons'] = self.graph_norm(x_dict['cons'], qp.cons_ptr)
+            x_dict = {key: F.leaky_relu(x) for key, x in x_dict.items()}
         x_vars = x_dict['vars']
         x_cons = x_dict['cons']
         

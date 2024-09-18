@@ -4,15 +4,15 @@ model_params:
   hidden_dim: 64
   gnn_params:
     hidden_dim: 64
-    num_layers: 2
+    num_layers: 1
     heads: 2
 
 train_params:
-  epochs: 1000
-  lr: 1e-5
+  epochs: 100000
+  lr: 1e-3
   max_lr: 1e-3
   validate_step: 10
-  batchsize: 3
+  batchsize: 5
 
 validate_params:
   batchsize: 3

@@ -18,13 +18,17 @@ if torch.cuda.is_available():
     device = torch.device("cuda:0")
 else:
     device = torch.device("cpu")
-data_scheduler = PDHCG_DataScheduler("random_qp")
+generate_path = "/data/hongpei/small_mpc/raw"
+if not os.path.exists(generate_path):
+    os.makedirs(generate_path)
+data_scheduler = PDHCG_DataScheduler("/data/hongpei/small_mpc/raw")
 for i in tqdm(range(5000)):
+    scale = np.random.randint(63, 200)
     pdhcg = PDHCG(gpu_flag=True, warm_up_flag=True)
-    pdhcg.setGeneratedProblem("randomqp", 100000, 1e-4, i)
+    pdhcg.setGeneratedProblem("mpc", scale, 1e-4, i + 10000)
     pdhcg.solve()
     data_scheduler.save_pair(pdhcg.toPyProblem(), np.array(pdhcg.primal_solution), 
-                             np.array(pdhcg.dual_solution), pdhcg.solve_time_sec, pdhcg.iteration_count)
+                             np.array(pdhcg.dual_solution), pdhcg.solve_time_sec, pdhcg.iteration_count, zipped=False)
     
 
 
