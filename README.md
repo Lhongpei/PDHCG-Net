@@ -5,7 +5,7 @@ The Neural Network is defined as:
 ![Iteration Steps](./image.png)
 
 ## A Warper of Julia version
-This repo contains the Python API of PDHCG.jl, a julia implementation of PDHCG. However, please notice that [PDHCG-Python](https://github.com/Lhongpei/PDHCG-Python) is the latest version of Python API, and Python API in this repo will not be updated.
+This repo contains the Python API of the julia implementation of PDHCG for training neural networks and warm-start efficiency. However, please notice that [PDHCG-Python](https://github.com/Lhongpei/PDHCG-Python) is the latest version of Python API, and **Python API in this repo will not be updated.**
 
 In addition, this repo is designed for converting QP problem between Julia, Numpy and PyTorch and contains tools for batch-processing data for training efficiency.
 
