@@ -1,109 +1,14 @@
-# PDHCG.jl
+# PDHCG-Net
+PDHCG-Net aims to use Neural Networks, inspired by the updating rule of [PDHCG](https://arxiv.org/abs/2405.16160), to warm start QP solvers.
 
-This repository contains the official implementation of the restarted Primal-Dual Hybrid Conjugate Gradient (PDHCG) algorithm for solving large-scale convex quadratic programming problems.
+The Neural Network is defined as:
+![Iteration Steps](./image.png)
 
-Part of the code utilizes [PDQP.jl](https://github.com/jinwen-yang/PDQP.jl) by Jinwen Yang and Haihao Lu.
+## A Warper of Julia version
+This repo contains the Python API of PDHCG.jl, a julia implementation of PDHCG. However, please notice that [PDHCG-Python](https://github.com/Lhongpei/PDHCG-Python) is the latest version of Python API, and Python API in this repo will not be updated.
 
-## Setup
+In addition, this repo is designed for converting QP problem between Julia, Numpy and PyTorch and contains tools for batch-processing data for training efficiency.
 
-A one-time step is required to set up the necessary packages on the local machine:
-
-```sh
-julia --project -e 'import Pkg; Pkg.instantiate()'
-```
-
-## Test
-
-To test if the setup is successful, use the following command:
-
-All commands below assume that the current directory is the working directory.
-
-```sh
-julia runtest.jl
-```
-
-If the setup is completed correctly, you should see the following output:
-
-```.
---- Solver Test Summary ---
-CPU test: SUCCESS
-GPU test: SUCCESS
----------------------------
-Test Summary: | Pass  Total   Time
-Solver Test   |    2      2   <time>
-```
-
-## Running
-
-### API for using PDHCG
-
-`solve.jl` is the recommended script for using PDHCG, which uses command-line arguments to pass parameters. The results are written in JSON and text files.
-
-```sh
-$ julia --project scripts/solve.jl \
---instance_path=INSTANCE_PATH --output_directory=OUTPUT_DIRECTORY \ 
---tolerance=TOLERANCE --time_sec_limit=TIME_SEC_LIMIT --use_gpu=USE_GPU
-```
-
-`run.jl` is a script for using PDHCG to solve QP instances. It uses function calls for parameter passing.
-
-### Solving Datasets
-
-`run.jl` is suitable to solve instances in given datasets by setting `folder_path` item in this file.
-
-  For example, to solve example files, you can set the `folder_path` as follows:
-  
-```sh
-folder_path = "./example/" 
-```
-
-### Data Requirement
-
-Input data shouldn't have any constraint with inf upper-bound and -inf lower-bound.
-
-## Datasets
-
-All datasets we used can be found at [https://anonymous.4open.science/r/QP_datasets/]
-
-## Interpreting the output
-
-A table of iteration stats will be printed with the following headings.
-
-### runtime
-
-- `#iter`: the current iteration number.
-- `#kkt`: the cumulative number of times the KKT matrix is multiplied.
-- `seconds`: the cumulative solve time in seconds.
-
-### residuals
-
-- `pr norm`: the Euclidean norm of primal residuals (i.e., the constraint violation).
-- `du norm`: the Euclidean norm of the dual residuals.
-- `gap`: the gap between the primal and dual objective.
-
-### solution information
-
-- `pr obj`: the primal objective value.
-- `pr norm`: the Euclidean norm of the primal variable vector.
-- `du norm`: the Euclidean norm of the dual variable vector.
-
-### relative residuals
-
-- `rel pr`: the Euclidean norm of the primal residuals, relative to the right-hand side.
-- `rel dul`: the Euclidean norm of the dual residuals, relative to the primal linear objective.
-- `rel gap`: the relative optimality gap.
-  
-### At the end of the run, the following summary information will be printed
-
-- Total Iterations: The total number of Primal-Dual iterations.
-
-- CG  iteration: The total number of Conjugate Gradient iterations.
-
-- Solving Status: Indicating if it found an optimal solution.
-
-### Others
-
-- `json2csv.jl` is a utility to summarize all output files.
 
 ## License
 
